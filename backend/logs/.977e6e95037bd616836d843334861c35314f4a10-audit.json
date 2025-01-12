@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\BroCode\\Desktop\\arbor_shift_management_system\\backend\\logs\\.977e6e95037bd616836d843334861c35314f4a10-audit.json",
+    "files": [
+        {
+            "date": 1736712927910,
+            "name": "C:\\Users\\BroCode\\Desktop\\arbor_shift_management_system\\backend\\logs\\error-2025-01-12.log",
+            "hash": "dccbdab4e54d91d9d85576fc03d5985ecf0bb733aefe24b4ce71ec3783422f64"
+        }
+    ],
+    "hashType": "sha256"
+}

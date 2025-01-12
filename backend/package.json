@@ -1,24 +1,49 @@
 {
   "name": "arbor_shift_management_system_backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node index.ts",
+    "start": "nodemon server.ts",
     "build": "tsc",
-    "server": "node dist/index.js"
+    "server": "node dist/server.js",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:run": "ts-node ./node_modules/typeorm/cli.js migration:run -d ./config/data_source.ts",
+    "migration:revert": "ts-node ./node_modules/typeorm/cli.js migration:revert -d ./config/data_source.ts",
+    "schema:sync": "npm run typeorm migration:sync -- -d ./config/data_source.ts",
+    "migration:show": "npm run typeorm migration:show -- -d ./config/data_source.ts",
+    "migration:generate": "npm run typeorm migration:generate -- -d ./config/data_source.ts",
+    "migration:create": "npm run typeorm migration:create"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.5",
+    "@types/pg": "^8.11.10",
+    "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "@types/body-parser": "^1.19.5",
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.4",
+    "pg": "^8.13.1",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.20",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   }
 }
