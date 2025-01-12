@@ -4,5 +4,8 @@ node_modules/
 # Docker
 compose.yaml
 
-#Migration
+# Migration
 migration/
+
+# Log
+logs
