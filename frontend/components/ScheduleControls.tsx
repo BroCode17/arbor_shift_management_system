@@ -69,7 +69,7 @@ const ScheduleControls: React.FC<ScheduleControlsProps> = ({ onDateChange, onAdd
       </div>
       <div className="flex gap-4">
         <button className="px-4 py-2 border rounded flex items-center gap-2">
-          All members
+          All Employees
           {/* Dropdown arrow SVG */}
         </button>
         <button 
