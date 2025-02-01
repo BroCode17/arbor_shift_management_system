@@ -4,7 +4,7 @@ const Header = () => {
   return (
     <header className="flex items-center justify-between p-4 border-b">
       <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold">Schedules</h1>
+        <h1 className="text-2xl font-bold">Schedule</h1>
         <div className="flex gap-2 bg-gray-100 rounded-full p-1">
           <button className="px-4 py-1 bg-white rounded-full shadow-sm">Live</button>
           <button className="px-4 py-1">Week</button>
