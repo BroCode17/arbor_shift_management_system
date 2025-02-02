@@ -1,2 +1,11 @@
 # Commons
 node_modules/
+
+# Docker
+compose.yaml
+
+# Migration
+migration/
+
+# Log
+logs
