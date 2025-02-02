@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from 'react';
 import Calendar from 'react-calendar';
-import { format, addDays } from 'date-fns';
+import { format, addWeeks, startOfWeek } from 'date-fns';
 import 'react-calendar/dist/Calendar.css';
 
 interface ScheduleControlsProps {
@@ -11,42 +11,77 @@ interface ScheduleControlsProps {
 
 const ScheduleControls: React.FC<ScheduleControlsProps> = ({ onDateChange, onAddSchedule }) => {
   const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   const handleDateChange = (date: Date) => {
-    setSelectedDate(date);
+    const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+    setSelectedDate(weekStart);
     setShowCalendar(false);
-    onDateChange(date);
+    onDateChange(weekStart);
+  };
+
+  const handleWeekNavigation = (direction: 'prev' | 'next') => {
+    const newDate = direction === 'prev' 
+      ? addWeeks(selectedDate, -1)
+      : addWeeks(selectedDate, 1);
+    handleDateChange(newDate);
   };
 
   const handleTodayClick = () => {
-    const today = new Date();
+    const today = startOfWeek(new Date(), { weekStartsOn: 1 });
     setSelectedDate(today);
     onDateChange(today);
+  };
+
+  const formatDateRange = (date: Date) => {
+    const endDate = addWeeks(date, 1);
+    return `${format(date, 'MMM dd')} - ${format(endDate, 'MMM dd, yyyy')}`;
   };
 
   return (
     <div className="flex items-center justify-between p-4 relative">
       <div className="flex items-center gap-4">
-        <div className="flex gap-2">
+        <div className="flex gap-2 h-full">
           <button 
             className="p-2 border rounded hover:bg-gray-50"
-            onClick={() => handleDateChange(addDays(selectedDate, -1))}
+            onClick={() => handleWeekNavigation('prev')}
           >
-            {/* Previous arrow SVG */}
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-5 w-5" 
+              viewBox="0 0 20 20" 
+              fill="currentColor"
+            >
+              <path 
+                fillRule="evenodd" 
+                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" 
+                clipRule="evenodd" 
+              />
+            </svg>
           </button>
           <button 
             className="p-2 border rounded hover:bg-gray-50"
-            onClick={() => handleDateChange(addDays(selectedDate, 1))}
+            onClick={() => handleWeekNavigation('next')}
           >
-            {/* Next arrow SVG */}
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-5 w-5" 
+              viewBox="0 0 20 20" 
+              fill="currentColor"
+            >
+              <path 
+                fillRule="evenodd" 
+                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" 
+                clipRule="evenodd" 
+              />
+            </svg>
           </button>
         </div>
         <button 
-          className="flex items-center gap-2 border rounded px-4 py-2 hover:bg-gray-50"
+          className="flex items-center gap-2 border rounded px-4 py-2 hover:bg-gray-50 min-w-[200px] justify-center"
           onClick={() => setShowCalendar(!showCalendar)}
         >
-          {format(selectedDate, 'MMM dd, yyyy')}
+          {formatDateRange(selectedDate)}
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
           </svg>
@@ -54,7 +89,7 @@ const ScheduleControls: React.FC<ScheduleControlsProps> = ({ onDateChange, onAdd
         {showCalendar && (
           <div className="absolute top-16 left-0 z-50 shadow-lg bg-white rounded-lg">
             <Calendar
-              onChange={setSelectedDate}
+              onChange={handleDateChange}
               value={selectedDate}
               className="border-0"
             />
@@ -64,7 +99,7 @@ const ScheduleControls: React.FC<ScheduleControlsProps> = ({ onDateChange, onAdd
           className="px-4 py-2 border rounded hover:bg-gray-50"
           onClick={handleTodayClick}
         >
-          Today
+          This Week
         </button>
       </div>
       <div className="flex gap-4">

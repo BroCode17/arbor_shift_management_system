@@ -1,6 +1,5 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import Image from 'next/image';
 import ScheduleModal from './ScheduleModal';
 import ScheduleControls from './ScheduleControls';
@@ -22,37 +21,29 @@ interface ScheduleEntry {
     }[];
 }
 
-// const mockData: ScheduleEntry[] = [
-//     {
-//         id: 1,
-//         name: 'Adrian Goia',
-//         avatar: '/avatars/adrian.jpg',
-//         schedules: [
-//             {
-//                 date: '12',
-//                 shifts: [{ time: '9 am - 5 pm', status: 'on-time', type: 'shift' }]
-//             },
-//             {
-//                 date: '13',
-//                 shifts: [{ time: '9 am - 5 pm', status: 'early', type: 'shift' }]
-//             },
-//             {
-//                 date: '14',
-//                 shifts: [{ time: '9 am - 5 pm', type: 'shift' }]
-//             },
-//             {
-//                 date: '15',
-//                 shifts: [{ time: 'All day', type: 'out' }]
-//             }
-//         ]
-//     },
-//     // Add more mock data as needed
-// ];
 
-const ScheduleGrid = () => {
-    const [schedules, setSchedules] = useState(getEmployeeShifts());
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(new Date());
+
+interface ScheduleGridProps {
+  currentDate: Date;
+  isModalOpen: boolean;
+  onModalClose: () => void;
+}
+
+const ScheduleGrid: React.FC<ScheduleGridProps> = ({
+  currentDate,
+  isModalOpen,
+  onModalClose
+}) => {
+  const [schedules, setSchedules] = useState(getEmployeeShifts());
+  
+  // Update the initial state to use the passed currentDate
+  const [selectedDate, setSelectedDate] = useState(currentDate);
+
+  // Add effect to update selectedDate when currentDate changes
+  useEffect(() => {
+    setSelectedDate(currentDate);
+  }, [currentDate]);
+
     const [selectedSchedule, setSelectedSchedule] = useState<{
         member?: string;
         date?: string;
@@ -99,48 +90,61 @@ const ScheduleGrid = () => {
     const handleDateChange = (date: Date) => {
         setSelectedDate(date);
     };
-    console.log(daysToShow)
+
+    
+
+    const isCurrentDate = (date: Date) => {
+        const today = new Date();
+        return (
+            date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear()
+        );
+    };
+
+   
     return (
         <div className="max-w-full overflow-x-auto">
-            <ScheduleControls
-                onDateChange={handleDateChange}
-                onAddSchedule={() => setIsModalOpen(true)}
-            />
-            <DragDropContext onDragEnd={(result) => {
-                if (!result.destination) return;
-                const items = Array.from(schedules);
-                const [reorderedItem] = items.splice(result.source.index, 1);
-                items.splice(result.destination.index, 0, reorderedItem);
-                setSchedules(items);
-            }}>
-                <div className="border rounded-lg overflow-hidden min-w-[768px]">
-                    <div className="grid grid-cols-[minmax(200px,250px)_repeat(4,minmax(150px,1fr))] bg-gray-50">
-                        <div className="p-4 font-medium border-b sticky left-0 bg-gray-50">Name</div>
-                        {daysToShow.map((day) => (
-                            <div key={day.date} className="p-4 text-center border-b border-l">
-                                <div className="text-xl md:text-2xl font-medium">{day.date}</div>
-                                <div className="text-xs md:text-sm text-gray-500">{day.day}</div>
+            <div className="border rounded-lg overflow-hidden min-w-[768px]">
+                <div className="grid grid-cols-[minmax(200px,250px)_repeat(4,minmax(150px,1fr))] bg-gray-50">
+                    <div className="p-4 font-medium border-b sticky left-0 bg-gray-50">Name</div>
+                    {daysToShow.map((day) => (
+                        <div 
+                            key={day.date} 
+                            className={`p-4 text-center border-b border-l ${
+                                isCurrentDate(day.fullDate) 
+                                    ? 'bg-blue-50 border-l-2 border-r-2 border-blue-500' 
+                                    : ''
+                            }`}
+                        >
+                            <div className={`text-xl md:text-2xl font-medium ${
+                                isCurrentDate(day.fullDate) ? 'text-blue-600' : ''
+                            }`}>
+                                {day.date}
                             </div>
-                        ))}
+                            <div className={`text-xs md:text-sm ${
+                                isCurrentDate(day.fullDate) ? 'text-blue-500' : 'text-gray-500'
+                            }`}>
+                                {day.day}
+                            </div>
+                        </div>
+                    ))}
 
-                        {schedules.map((entry, index) => (
-                            <ShiftItems
-                                key={index}
-                                entry={entry}
-                                onScheduleClick={onScheduleClick}
-                                daysToShow={daysToShow}
-                            />
-                        ))}
-                    </div>
+                    {schedules.map((entry, index) => (
+                        <ShiftItems
+                            key={index}
+                            entry={entry}
+                            onScheduleClick={onScheduleClick}
+                            daysToShow={daysToShow}
+                        />
+                    ))}
                 </div>
-            </DragDropContext>
+            </div>
 
-           
-            // Then pass it to the modal
             <ScheduleModal
-              isOpen={isModalOpen}
-              onClose={() => setIsModalOpen(false)}
-              onSave={handleSaveSchedule}
+                isOpen={isModalOpen}
+                onClose={onModalClose}
+                onSave={handleSaveSchedule}
             />
         </div>
     );
