@@ -9,7 +9,14 @@ interface TimesheetGridProps {
   selectedDate: Date;
 }
 
-const TimesheetGrid: React.FC<TimesheetGridProps> = ({ employees, selectedDate }) => {
+import { useViewModeStore } from '../store/viewModeStore';
+import { isSameDay, isSameWeek, parseISO } from 'date-fns';
+
+const TimesheetGrid: React.FC<TimesheetGridProps> = ({ 
+  employees, 
+  selectedDate,
+}) => {
+  const viewMode = useViewModeStore((state) => state.viewMode);
   const [shiftStatuses, setShiftStatuses] = useState<Record<string, 'approved' | 'declined' | null>>({});
   
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
@@ -78,10 +85,73 @@ const TimesheetGrid: React.FC<TimesheetGridProps> = ({ employees, selectedDate }
     setShiftStatuses(newStatuses);
   };
 
-  // Update the grid item rendering
+  const isCurrentTime = (shift: any, date: string) => {
+    if (!shift) return false;
+    const now = new Date();
+    const [startTime, endTime] = shift.time.split('-');
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentDate = format(now, 'yyyy-MM-dd');
+
+    // Check if it's the current date and time is within shift window
+    return currentDate === date && 
+           ((currentHour === startHour && currentMinute >= (startMinute || 0)) || 
+            (currentHour > startHour));
+  };
+
+  const getColumnHighlight = (day: any) => {
+    const currentDate = format(new Date(), 'yyyy-MM-dd');
+    const currentWeekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    const dayWeekStart = format(startOfWeek(parseISO(day.fullDate), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+
+    if (viewMode === 'live' && day.fullDate === currentDate) {
+      return 'bg-blue-50/80 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.1)] relative z-10';
+    }
+    if (viewMode === 'day' && day.fullDate === currentDate) {
+      return 'bg-blue-50/80 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.1)] relative z-10';
+    }
+    if (viewMode === 'week' && dayWeekStart === currentWeekStart) {
+      return 'bg-blue-50/60 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.1)] relative z-10';
+    }
+    return '';
+  };
+
+  // Add this function after other utility functions
+  // Update the calculateTotalHours function
+  const calculateTotalHours = (schedules: any[], startDate: Date) => {
+    let totalMinutes = 0;
+    
+    schedules.forEach(schedule => {
+      const scheduleDate = new Date(schedule.date);
+      const isInSelectedWeek = isSameWeek(scheduleDate, startDate, { weekStartsOn: 1 });
+      
+      if (isInSelectedWeek && schedule.shifts) {
+        schedule.shifts.forEach((shift: any) => {
+          if (shift.type !== 'out' && shift.time) {
+            const [startTime, endTime] = shift.time.split('-');
+            if (startTime && endTime) {
+              const [startHour, startMinute] = startTime.split(':').map(Number);
+              const [endHour, endMinute] = endTime.split(':').map(Number);
+              
+              let minutes = (endHour * 60 + (endMinute || 0)) - (startHour * 60 + (startMinute || 0));
+              if (minutes < 0) {
+                minutes += 24 * 60;
+              }
+              totalMinutes += minutes;
+            }
+          }
+        });
+      }
+    });
+
+    return (totalMinutes / 60).toFixed(1);
+  };
+
+  // Update the return JSX for responsive design
   return (
-    <div className="border rounded-lg overflow-hidden mt-4">
-      <div className="grid grid-cols-[minmax(200px,250px)_repeat(7,1fr)_100px] bg-gray-50">
+    <div className="border rounded-lg overflow-hidden mt-4 overflow-x-auto">
+      <div className="min-w-[1200px] grid grid-cols-[minmax(200px,250px)_repeat(7,minmax(120px,1fr))_minmax(100px,auto)_minmax(100px,auto)] bg-gray-50">
         <div className="p-4 font-medium border-b flex justify-between items-center">
           <span>Employee</span>
           <button 
@@ -91,13 +161,38 @@ const TimesheetGrid: React.FC<TimesheetGridProps> = ({ employees, selectedDate }
             Approve All
           </button>
         </div>
+        
         {daysToShow.map((day) => (
-          <div key={day.date} className="p-4 text-center border-b border-l">
-            <div className="text-2xl font-medium">{day.date}</div>
-            <div className="text-xs text-gray-500">{day.day}</div>
-            <div className="text-xs text-gray-500">{day.month}</div>
+          <div 
+            key={day.date} 
+            className={`p-4 text-center border-b border-l transition-all duration-300 ${getColumnHighlight(day)}`}
+          >
+            <div className={`text-2xl font-medium ${
+              (viewMode === 'live' || viewMode === 'day' ) && day.fullDate === format(new Date(), 'yyyy-MM-dd') 
+                ? 'text-blue-600' 
+                : ''
+            }`}>
+              {day.date}
+            </div>
+            <div className={`text-xs ${
+              (viewMode === 'live' || viewMode === 'day') && day.fullDate === format(new Date(), 'yyyy-MM-dd')
+                ? 'text-blue-500' 
+                : 'text-gray-500'
+            }`}>
+              {day.day}
+            </div>
+            <div className={`text-xs ${
+              (viewMode === 'live' || viewMode === 'day') && day.fullDate === format(new Date(), 'yyyy-MM-dd')
+                ? 'text-blue-500' 
+                : 'text-gray-500'
+            }`}>
+              {day.month}
+            </div>
           </div>
         ))}
+        <div className="p-4 font-medium border-b border-l text-center whitespace-nowrap">
+          Total Hours
+        </div>
         <div className="p-4 font-medium border-b border-l text-center">Actions</div>
 
         {employees.map((employee) => (
@@ -124,9 +219,14 @@ const TimesheetGrid: React.FC<TimesheetGridProps> = ({ employees, selectedDate }
               const status = shiftStatuses[`${employee.id}-${day.fullDate}`];
 
               return (
-                <div key={day.date} className="relative p-4 border-b border-l bg-white">
+                <div 
+                  key={day.date} 
+                  className={`relative p-4 border-b border-l bg-white transition-all duration-300 ${getColumnHighlight(day)}`}
+                >
                   {daySchedule?.shifts.map((shift: any, idx: number) => {
                     const shiftStatus = getShiftStatus(shift);
+                    const isLiveShift = viewMode === 'live' && isCurrentTime(shift, day.fullDate);
+
                     return (
                       <div 
                         key={idx}
@@ -135,6 +235,8 @@ const TimesheetGrid: React.FC<TimesheetGridProps> = ({ employees, selectedDate }
                           status === 'approved' ? 'bg-green-50' :
                           status === 'declined' ? 'bg-red-50' :
                           'bg-blue-50'
+                        } ${
+                          isLiveShift ? 'ring-2 ring-blue-500 ring-offset-2' : ''
                         }`}
                       >
                         <div className="text-sm font-medium">{shift.time}</div>
@@ -182,10 +284,19 @@ const TimesheetGrid: React.FC<TimesheetGridProps> = ({ employees, selectedDate }
               );
             })}
 
-            <div className="p-4 border-b border-l bg-white flex justify-center gap-2">
+            <div className="p-4 border-b border-l bg-white flex items-center justify-center">
+              <div className="flex items-center gap-1">
+                <Clock className="w-4 h-4 text-gray-500" />
+                <span className="font-medium text-gray-700">
+                  {calculateTotalHours(employee.schedules, weekStart)}h
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 border-b border-l bg-white flex justify-center">
               <button
                 onClick={() => handleApproveRow(employee.id)}
-                className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                className="px-3 py-1 text-sm border rounded hover:bg-gray-50 whitespace-nowrap"
               >
                 Approve Row
               </button>

@@ -5,9 +5,11 @@ import Show from "../components/show";
 import Header from "../components/Header";
 import ScheduleControls from "../components/ScheduleControls";
 import ScheduleGrid from "../components/ScheduleGrid";
+import { getEmployeeShifts } from "@/data/mockShifts";
 
 export default function Home() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [employees] = useState(getEmployeeShifts());
   const [isAddScheduleModalOpen, setIsAddScheduleModalOpen] = useState(false);
 
   const handleDateChange = (date: Date) => {
@@ -22,10 +24,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <ScheduleControls 
-        onDateChange={handleDateChange}
-        onAddSchedule={handleAddSchedule}
-      />
       <div className="p-4">
         <div className="flex items-center gap-4 mb-4">
           <h2 className="text-lg font-semibold">Members</h2>
@@ -36,9 +34,15 @@ export default function Home() {
             </div>
           </div>
         </div>
-        
-        <ScheduleGrid  />
-        {/* <ScheduleGrid currentDate={currentDate} isModalOpen={isAddScheduleModalOpen} onModalClose={() => setIsAddScheduleModalOpen(false)} /> */}
+        <ScheduleControls
+          onDateChange={handleDateChange}
+          onAddSchedule={handleAddSchedule}
+        />
+        <ScheduleGrid 
+          currentDate={currentDate}
+          isModalOpen={isAddScheduleModalOpen}
+          onModalClose={() => setIsAddScheduleModalOpen(false)}
+        />
       </div>
     </div>
   );

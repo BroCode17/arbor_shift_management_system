@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import Sidebar from "../components/Sidebar";
+import { SearchProvider } from "@/contexts/SearchContext";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -20,7 +21,11 @@ export default function RootLayout({
       <body className={geist.className}>
         <div className="flex">
           <Sidebar />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1">
+            <SearchProvider>
+            {children}
+            </SearchProvider>
+          </main>
         </div>
       </body>
     </html>

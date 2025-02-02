@@ -63,11 +63,26 @@ export const mockEmployees = [
               breakTime: "13:00 - 13:30",
               claimedBy: "Michael Chen"
             }
+          },
+          {
+            time: "17:00 - 19:00",
+            status: "on-time",
+            type: "shift",
+            details: {
+              location: "Surgery Wing B",
+              department: "Surgery",
+              certifications: ["RN", "ACLS", "CNOR"],
+              hourlyRate: 65.00,
+              supervisorOnDuty: "Dr. Anderson",
+              breakTime: "13:00 - 13:30",
+              claimedBy: "Michael Chen"
+            }
           }
         ]
       }
     ]
   },
+ 
   {
     id: "emp3",
     name: "Emily Rodriguez",
