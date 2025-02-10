@@ -5,6 +5,13 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --sidebar-width: 16rem;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 4rem;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
