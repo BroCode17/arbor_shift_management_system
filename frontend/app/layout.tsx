@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { SearchProvider } from "@/contexts/SearchContext";
 import LoginContextProvider from "@/contexts/LoginContext"
+import { ShiftProvider } from "@/contexts/ShiftContext";
 
 
 const geist = Geist({ subsets: ["latin"] });
@@ -23,9 +24,11 @@ export default function RootLayout({
         <div className="flex">
           <main className="flex-1">
             <LoginContextProvider>
-          <SearchProvider>
-            {children}
-            </SearchProvider>
+              <ShiftProvider>
+                <SearchProvider>
+                  {children}
+                </SearchProvider>
+              </ShiftProvider>
             </LoginContextProvider>
           </main>
         </div>
