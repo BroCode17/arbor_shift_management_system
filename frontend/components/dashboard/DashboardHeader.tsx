@@ -38,7 +38,7 @@ const DashboardHeader = () => {
           >
             <div className="relative w-8 h-8 rounded-full overflow-hidden">
               <Image
-                src="/avatars/sarah.jpg"
+                src="/sarah_profile.jpg"
                 alt="Profile"
                 fill
                 className="object-cover"

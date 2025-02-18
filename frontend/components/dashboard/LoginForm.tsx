@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useLoginContext } from '@/contexts/LoginContext';
 
 const LoginForm = () => {
-  const {setIsLoggedIn} = useLoginContext();
+  const { setIsLoggedIn } = useLoginContext();
   const router = useRouter();
   const [credentials, setCredentials] = useState({
     email: '',

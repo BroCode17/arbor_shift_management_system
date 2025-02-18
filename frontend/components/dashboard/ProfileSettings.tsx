@@ -86,9 +86,9 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ isOpen, onClose }) =>
           <div className="p-6 border-b">
             <div className="flex items-center gap-4">
               <div className="relative">
-                <div className="w-16 h-16 rounded-full overflow-hidden">
+                <div className="relative w-16 h-16 rounded-full overflow-hidden">
                   <Image
-                    src="/avatars/sarah.jpg"
+                    src="/sarah_profile.jpg"
                     alt="Profile"
                     fill
                     className="object-cover"
