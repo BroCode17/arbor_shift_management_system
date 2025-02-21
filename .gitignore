@@ -1,2 +1,16 @@
 ## Module
 node_modules/
+
+// Assign shift
+        /**
+         * This logic can be changed based on the business need
+         * 1. We can perform some check like, user nearer to location
+         * 2. We can perform some check like, user is eligible for the shift
+         * 3. We can perform some check like, user is eligible for the shift based on the shift type
+         * 4. We can perform some check like, user is eligible for the shift based on the shift type and location
+         * 5. We can perform some check like, user is eligible for the shift based on the shift type and location and time
+         * 6. We can perform some check like, user is eligible for the shift based on the shift type and location and time and certification
+         * 7. We can perform some check like, user is eligible for the shift based on the shift type and location and time and certification and availability
+         * 8. We can perform some check like, admin has to approve the shift
+         */
+node_modules

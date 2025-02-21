@@ -75,6 +75,7 @@ class ShiftService {
             start_time: actualStartTime,
             end_time: actualEndTime,
             hourly_rate: finalRate,
+            remaining_slots: shiftTemplate.maxStaffRequired || shiftData.remaining_slots!,
             updated_at: new Date()
         }).onConflictDoUpdate({
             target: [availableShiftsSchema.id],
@@ -85,6 +86,7 @@ class ShiftService {
                 start_time: actualStartTime,
                 end_time: actualEndTime,
                 hourly_rate: finalRate,
+                remaining_slots: shiftTemplate.maxStaffRequired || shiftData.remaining_slots!,
                 updated_at: new Date()
             }
         }).returning();
@@ -150,114 +152,61 @@ class ShiftService {
 
     // Assign shift
     async claimShift({shiftId, userId}: ClaimedShiftTypes): Promise<ShiftAssignmentsSchemaInferInsert | undefined> {
-        // check if user is present;
+        // check if user is present
         const user = await db.query.employeeSchema.findFirst({
             where: (employeeSchema, { eq }) => eq(employeeSchema.id, userId)
         }); 
 
-        // Handle it properly
         if (!user) {
-            // will send response to the client that user is not found
             throw new Error("User not found", { cause: 404 });
         }
-        
-        // Get shift from db
-        const [shift]: AvailableShiftSchemaInferInsert[] = await db.select().from(availableShiftsSchema).where(eq(availableShiftsSchema.id, shiftId));
-        // Check if shift is available
+        // Get shift with template details and current remaining slots
+        const shift = await db.query.availableShiftsSchema.findFirst({
+            where: (shifts, { eq }) => eq(shifts.id, shiftId),
+            with: {
+                shift: true // This gets the template details
+            }
+        });
+    
         if (!shift) {
-            // will send response to the client that shift is not available
             throw new Error("Shift not found", { cause: 404 });
         }
-
-        // Check if shift is already assigned or minimum requirement is met like number of people required
-        //const [shiftAssignment]: ShiftAssignmentsSchemaInferInsert[] = await db.select().from(shiftAssignmentsSchema).where(eq(shiftAssignmentsSchema.shift_id, shiftId));
-        //if (shiftAssignment) {
-            // will send response to the client that shift is already assigned
-          //  throw new Error("Shift is already assigned", { cause: 400 });
-       // }
-        // Assign shift
-        /**
-         * This logic can be changed based on the business need
-         * 1. We can perform some check like, user nearer to location
-         * 2. We can perform some check like, user is eligible for the shift
-         * 3. We can perform some check like, user is eligible for the shift based on the shift type
-         * 4. We can perform some check like, user is eligible for the shift based on the shift type and location
-         * 5. We can perform some check like, user is eligible for the shift based on the shift type and location and time
-         * 6. We can perform some check like, user is eligible for the shift based on the shift type and location and time and certification
-         * 7. We can perform some check like, user is eligible for the shift based on the shift type and location and time and certification and availability
-         * 8. We can perform some check like, admin has to approve the shift
-         */
-        const [newShiftAssignment]: ShiftAssignmentsSchemaInferInsert[] = await db.insert(shiftAssignmentsSchema).values({
-            shift_id: shiftId,
-            user_id: userId,
-        }).returning();
-        return newShiftAssignment;
-    }
-
-
-    /**
-     * if manager has to approve shift
-     * then this function is needed
-     */
-    async approveClaimShift({shiftId, userId, status}: ClaimedShiftTypes): Promise<ShiftAssignmentsSchemaInferInsert | undefined> {
-        // check if user is present;
-        const user = await db.query.employeeSchema.findFirst({
-            where: (employeeSchema, { eq }) => eq(employeeSchema.id, userId)
-        });
-        // Handle it properly
-        if (!user) {
-            // will send response to the client that user is not found
-            throw new Error("User not found", { cause: 404 });
+    
+        if (shift.status === 'filled' || shift.status === 'cancelled') {
+            throw new Error("Shift is no longer available", { cause: 400 });
         }
-        // Get shift from db
-        // const [shift]: AvailableShiftSchemaInferInsert[] = await db.select().from(availableShiftsSchema).where(eq(availableShiftsSchema.id, shiftId));
-        // // Check if shift is available
-        // if (!shift) {
-        //     // will send response to the client that shift is not available
-        //     throw new Error("Shift not found", { cause: 404 });
-        // }
-
-        // update assign shift status
-        const [newShiftAssignment]: ShiftAssignmentsSchemaInferInsert[] = await db.update(shiftAssignmentsSchema).set({
-            status: status,
-        }).where(eq(shiftAssignmentsSchema.id, shiftId)).returning();
-        return newShiftAssignment;
-    }
-
-
-    /** User */
-    async getAllShiftsForUser(userId: string): Promise<ShiftAssignmentsSchemaInferInsert[] | undefined> {
-        // check if user is present;
-        
-        // Handle it properly
-        const result = await db.query.shiftAssignmentsSchema.findMany({
-            where: (shiftAssignmentsSchema, { eq }) => eq(shiftAssignmentsSchema.user_id, userId),
-            with: {
-                shift: true
-            }
-        });
-        return result;
-    }
-
-    // get all approved shifts for user
-    async getAllApprovedShiftsByUserId(userId: string): Promise<ShiftAssignmentsSchemaInferInsert[] | undefined> {
-        // check if user is present;
-        const user = await db.query.employeeSchema.findFirst({
-            where: (employeeSchema, { eq }) => eq(employeeSchema.id, userId)
-        });
-        // Handle it properly
-        if (!user) {
-            // will send response to the client that user is not found
-            throw new Error("User not found", { cause: 404 });
+    
+        if (shift.remaining_slots <= 0) {
+            throw new Error("No positions available for this shift", { cause: 400 });
         }
-        const result = await db.query.shiftAssignmentsSchema.findMany({
-            where: (shiftAssignmentsSchema, { eq }) => eq(shiftAssignmentsSchema.user_id, userId),
-            with: {
-                shift: true
-            }
+    
+        // Start a transaction to ensure data consistency
+        return await db.transaction(async (tx) => {
+            // Decrease remaining slots and update status if needed
+            const [updatedShift] = await tx.update(availableShiftsSchema)
+                .set({
+                    remaining_slots: shift.remaining_slots - 1,
+                    status: shift.remaining_slots - 1 === 0 ? 'filled' : 'open',
+                    updated_at: new Date()
+                })
+                .where(eq(availableShiftsSchema.id, shiftId))
+                .returning();
+    
+            // Create shift assignment
+            const [newShiftAssignment] = await tx.insert(shiftAssignmentsSchema)
+                .values({
+                    shift_id: shiftId,
+                    user_id: userId,
+                    status: shift.shift?.requiresApproval ? 'pending' : 'accepted',
+                    created_at: new Date(),
+                    updated_at: new Date()
+                })
+                .returning();
+    
+            return newShiftAssignment;
         });
-        return result;
     }
+    // Also update the addAvailableShift function to set initial remaining_slots
 
     async clockIn({ userId, shiftId, deviceLocation, deviceId, timestamp }: ClockRequestType): Promise<ShiftAssignmentsSchemaInferInsert> {
         // 1. Verify user exists and is assigned to shift
@@ -280,6 +229,26 @@ class ShiftService {
             .returning();
 
         return updatedAssignment;
+    }
+
+       // get all approved shifts for user
+       async getAllApprovedShiftsByUserId(userId: string): Promise<ShiftAssignmentsSchemaInferInsert[] | undefined> {
+        // check if user is present;
+        const user = await db.query.employeeSchema.findFirst({
+            where: (employeeSchema, { eq }) => eq(employeeSchema.id, userId)
+        });
+        // Handle it properly
+        if (!user) {
+            // will send response to the client that user is not found
+            throw new Error("User not found", { cause: 404 });
+        }
+        const result = await db.query.shiftAssignmentsSchema.findMany({
+            where: (shiftAssignmentsSchema, { eq }) => eq(shiftAssignmentsSchema.user_id, userId),
+            with: {
+                shift: true
+            }
+        });
+        return result;
     }
 
     async clockOut({ userId, shiftId, deviceLocation, deviceId, timestamp }: ClockRequestType): Promise<ShiftAssignmentsSchemaInferInsert> {
@@ -313,7 +282,6 @@ class ShiftService {
 
         return updatedAssignment;
     }
-
     private async verifyShiftAssignment(userId: string, shiftId: string) {
         const assignment = await db.query.shiftAssignmentsSchema.findFirst({
             where: (assignments, { and, eq }) => and(
@@ -330,24 +298,23 @@ class ShiftService {
             }
         });
 
-
+    
         if (!assignment) {
             throw new Error('Shift assignment not found', { cause: 404 });
         }
-
+    
         if (assignment.status !== 'accepted' && assignment.status !== 'in_progress') {
             throw new Error('Sorry shift is not verified yet', { cause: 400 });
         }
-
+    
         return assignment;
     }
-
     private async verifyShiftTiming(shift: any, timestamp: Date, operation: 'clockIn' | 'clockOut') {
         const currentTime = new Date(timestamp);
         const shiftStart = new Date(shift.start_time);
         const shiftEnd = new Date(shift.end_time);
         const shiftDate = format(new Date(shift.shift_date), 'yyyy-MM-dd');
-
+    
         // Verify the shift is for today
         const today = format(new Date(), 'yyyy-MM-dd');
         console.log(shiftDate );
@@ -355,7 +322,7 @@ class ShiftService {
         if (shiftDate !== today) {
             throw new Error('Clock operation only allowed on shift date', { cause: 400 });
         }
-
+    
         // Allow clock-in 15 minutes before shift start
         const earliestClockIn = format(new Date(shiftStart.getTime() - 15 * 60000), 'HH:mm:ss');
         // Allow clock-out 15 minutes after shift end
@@ -365,8 +332,8 @@ class ShiftService {
         const formattedCurrentTime = format(currentTime, 'HH:mm:ss');
         const formattedShiftStart = format(shiftStart, 'HH:mm:ss');
         const formattedShiftEnd = format(shiftEnd, 'HH:mm:ss');
-
-
+    
+    
         if (operation === 'clockIn') {
             // Prevent double clock-in
             if (shift.status === 'in_progress') {
@@ -377,8 +344,8 @@ class ShiftService {
                 throw new Error('Clock-in time outside of allowed window', { cause: 400 });
             }
         }
-
-
+    
+    
         if (operation === 'clockOut') {
             // Verify clock-out time window
             if (formattedCurrentTime < formattedShiftStart || formattedCurrentTime > latestClockOut) {
@@ -392,7 +359,6 @@ class ShiftService {
             }
         }
     }
-
     private async verifyLocation(deviceLocation: LocationVerification['coordinates'], locationId: string) {
         // Basic validation
         const validation = validateLocationData({
@@ -425,7 +391,7 @@ class ShiftService {
                 geofence: true // Assuming you add geofence data to location schema
             }
         });
-
+    
   
     
         if (!location || !location.coordinates) {
@@ -437,7 +403,7 @@ class ShiftService {
         //     where: (loc, { eq }) => eq(loc.locationId, locationId)
         // });
         const geofence = location.geofence;
-
+    
         if (!geofence) {
             throw new Error('Geofence configuration not found', { cause: 404 });
         }
@@ -473,7 +439,7 @@ class ShiftService {
         });
     
         console.log(deviceLocation)
-
+    
         const newDeviceLocation: Partial<LocationAudit> = {
             userId: deviceLocation.userId!,
             shiftId: deviceLocation.shiftId!,
