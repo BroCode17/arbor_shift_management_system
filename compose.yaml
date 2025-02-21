@@ -1,0 +1,31 @@
+# Docker Compose file (docker-compose.yml)
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:latest   # Official PostgreSQL image
+    container_name: shift_management_db
+    environment:
+      POSTGRES_DB: shift_management
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"         # Port mapping (host:container)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persistent data storage
+
+  # PgAdmin for Database Management
+  pgadmin:
+    image: dpage/pgadmin4   # Official pgAdmin image
+    container_name: shift_management_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"           # Access pgAdmin through port 5050
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:            # Named volume for database persistence
