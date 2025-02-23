@@ -25,7 +25,7 @@ const DashboardHeader = () => {
 
         <div className="flex items-center gap-4">
           <button
-            onClick={() => setIsNotificationsOpen(true)}
+            onClick={setIsNotificationsOpen}
             className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
           >
             <Bell className="w-5 h-5" />
