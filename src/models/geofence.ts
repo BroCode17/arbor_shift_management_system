@@ -1,4 +1,4 @@
-import { pgTable, uuid, decimal, jsonb, varchar, boolean } from "drizzle-orm/pg-core";
+import { pgTable, uuid, decimal, jsonb, varchar, boolean, integer } from "drizzle-orm/pg-core";
 import { timestamps } from "./timestamp";
 import { relations } from "drizzle-orm";
 import { locationSchema } from "./location";
@@ -11,6 +11,7 @@ export const geofenceSchema = pgTable('geofences', {
     restrictedZones: jsonb('restricted_zones').$type<[number, number][][]>(), // Array of polygons
     maxAllowedSpeed: decimal('max_allowed_speed', { precision: 5, scale: 2 }).$type<number>(), // km/h
     requiresApproval: boolean('requires_approval').default(false),
+    age: integer('age').$type<number>(), // years
     ...timestamps
 });
 

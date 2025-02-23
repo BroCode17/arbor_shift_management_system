@@ -1,15 +1,59 @@
-import { UserInsertType, UserSelectType, employeeSchema } from './../models/user';
+import { UserInsertType, UserSelectType, employeeSchema, certificateSchema, CertificateInsertType } from './../models/user';
 import { Request, Response } from 'express';
 import { dbConnection } from '../utils/db';
 import { eq } from 'drizzle-orm';
 
 const db = dbConnection;
 
+interface CreateUserInput extends Omit<UserInsertType, "id" | "created_at" | "updated_at" | "deleted_at"> {
+  certificates?: Array<Omit<CertificateInsertType, "id" | "employeeId" | "created_at" | "updated_at" | "deleted_at" >>;
+}
+
 class UserService {
-  async createUser( employeeData: Omit<UserInsertType, "id" | "created_at" | "updated_at" | "deleted_at">): Promise<UserInsertType> {
-    const result = await db.insert(employeeSchema).values(employeeData).returning();
-    console.log(result);
-    return result[0];
+  async createUser(employeeData: CreateUserInput): Promise<UserInsertType> {
+    const requiresCertificate = employeeData.role === 'user';
+    
+    // Start a transaction
+    return await db.transaction(async (tx) => {
+      // Create user first
+      const [user] = await tx.insert(employeeSchema)
+        .values({
+          ...employeeData,
+          requiresCertificate
+        })
+        .returning();
+
+      if (!user) {
+        throw new Error('Failed to create user');
+      }
+      // For regular users, validate and create certificates
+      if (requiresCertificate) {
+        if (!employeeData.certificates?.length) {
+          throw new Error('Regular users must provide at least one certificate');
+        }
+
+        // Validate certificate data
+        // employeeData.certificates.forEach(cert => {
+        //   if (!cert.certificateNumber || !cert.certificateName || 
+        //       !cert.certificateIssuer || !cert.expiryDate) {
+        //     throw new Error('All certificate fields are required');
+        //   }
+        // });
+
+        // Create certificates for the user
+        await tx.insert(certificateSchema)
+          .values(
+            employeeData.certificates.map(cert => ({
+              ...cert,
+              employeeId: user.id,
+              isValid: true,
+              created_at: new Date(),
+            }))
+          );
+      }
+
+      return user;
+    });
   }
 
   async getUserByEmail(email: string): Promise<UserSelectType | undefined> {
@@ -18,10 +62,14 @@ class UserService {
   }
 
   async getAllUsers(): Promise<UserSelectType[] | undefined> {
-    const users = await db.select().from(employeeSchema);
+    const users = await db.query.employeeSchema.findMany({
+      with: {
+        certificates: true
+      }
+    });
     return users;
   }
+  
 }
-
 
 export default new UserService();

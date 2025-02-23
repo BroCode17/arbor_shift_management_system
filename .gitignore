@@ -1,2 +1,13 @@
 ## Module
 node_modules/
+
+
+
+## file
+readme.md
+
+## Test
+/src/__tests__/
+
+## Env
+.env

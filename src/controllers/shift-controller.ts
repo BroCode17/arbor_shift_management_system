@@ -53,6 +53,8 @@ class ShiftController {
             res.status(500).json({success: false, messaeg: "Server internal error"})
         }   
     }
+
+ 
     async getAllClaimedShifts(req: Request, res: Response): Promise<void> {
         const { userId } = req.params;
         try {
