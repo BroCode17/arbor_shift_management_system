@@ -2,11 +2,17 @@ import { UserInsertType, UserSelectType, employeeSchema, certificateSchema, Cert
 import { Request, Response } from 'express';
 import { dbConnection } from '../utils/db';
 import { eq } from 'drizzle-orm';
+import { verify } from 'crypto';
+import authService from './auth-service';
 
 const db = dbConnection;
 
 interface CreateUserInput extends Omit<UserInsertType, "id" | "created_at" | "updated_at" | "deleted_at"> {
   certificates?: Array<Omit<CertificateInsertType, "id" | "employeeId" | "created_at" | "updated_at" | "deleted_at" >>;
+}
+
+interface GetUserSelectType extends Omit<UserSelectType, "passwordHash"> {
+  
 }
 
 class UserService {
@@ -61,6 +67,16 @@ class UserService {
     return user[0];
   }
 
+  async getUserById(id: string): Promise<UserSelectType | undefined> {
+    const user = await db.query.employeeSchema.findFirst({
+      where: (employee, { eq }) => eq(employee.id, id),
+      with: {
+        certificates: true
+      }
+    });
+    return user;
+  }
+
   async getAllUsers(): Promise<UserSelectType[] | undefined> {
     const users = await db.query.employeeSchema.findMany({
       with: {
@@ -68,6 +84,31 @@ class UserService {
       }
     });
     return users;
+  }
+
+
+  async getUser(accessToken: string): Promise<GetUserSelectType | undefined> {
+    // decode the accessToken to get the user id
+    if(!accessToken){
+      throw new Error("Access token is required");
+    }
+
+    const decodedToken = authService.verifyAccessToken(accessToken);
+    if(!decodedToken){
+      throw new Error("Invalid access token");
+    }
+
+    const user = await db.query.employeeSchema.findFirst({
+      where: (employee, { eq }) => eq(employee.id, decodedToken.userId),
+      columns: {
+        passwordHash: false
+      },
+      with: {
+        certificates: true
+      }
+    });
+
+    return user;
   }
   
 }

@@ -33,7 +33,7 @@ class AuthController {
       const { user, tokens } = await authService.login(email, password);
 
       // Set refresh token in HTTP-only cookie
-      res.cookie('refreshToken', tokens.refreshToken, {
+      res.cookie('refresh_token', tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -103,10 +103,11 @@ class AuthController {
 
   async refresh(req: Request, res: Response): Promise<any> {
     try {
-        const refreshToken = req.cookies.refreshToken;
+        const refreshToken = req.cookies.refresh_token;
         const oldAccessToken = req.headers.authorization?.split(' ')[1];
-        console.log(req.headers.authorization);
+    
         if (!refreshToken) {
+          console.log('hello')
             return res.status(401).json({ message: 'Refresh token required' });
         }
 

@@ -106,7 +106,7 @@ class ShiftService {
                 shift: true
             }
         });
-        console.log(result);
+    
         return result;
     }
 
@@ -350,8 +350,7 @@ class ShiftService {
 
         // Verify the shift is for today
         const today = format(new Date(), 'yyyy-MM-dd');
-        console.log(shiftDate );
-        console.log(today)
+      
         if (shiftDate !== today) {
             throw new Error('Clock operation only allowed on shift date', { cause: 400 });
         }
@@ -472,7 +471,7 @@ class ShiftService {
             }
         });
     
-        console.log(deviceLocation)
+   
 
         const newDeviceLocation: Partial<LocationAudit> = {
             userId: deviceLocation.userId!,
@@ -537,7 +536,7 @@ class ShiftService {
         });
     }
     private async logLocationAudit(auditData: any) {
-        console.log(auditData)
+
         await db.insert(locationAuditSchema).values({
             userId: auditData.userId,
             shiftId: auditData.shiftId,

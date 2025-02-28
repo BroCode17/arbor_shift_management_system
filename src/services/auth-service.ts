@@ -9,7 +9,7 @@ import { TokenPayload } from '../types/auth';
 class AuthService {
   private readonly accessTokenSecret = process.env.JWT_ACCESS_SECRET!
   private readonly refreshTokenSecret = process.env.JWT_REFRESH_SECRET!
-  private readonly accessTokenExpiry =  '15m';
+  private readonly accessTokenExpiry =  '59m'; // We have to change this to 15 minutes
   private readonly refreshTokenExpiry =  '7d';
 
   async hashPassword(password: string): Promise<string> {
@@ -40,7 +40,7 @@ class AuthService {
    
     });
 
-    console.log(user);
+
 
     if (!user) {
       throw new Error('Invalid credentials');
@@ -84,7 +84,7 @@ class AuthService {
     try {
       return jwt.verify(token, this.refreshTokenSecret) as TokenPayload;
     } catch (error) {
-      throw new Error('Invalid refresh token');
+      throw new Error('Invalid refresh token', {cause: 401});
     }
   }
 
