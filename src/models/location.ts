@@ -6,8 +6,8 @@ import { geofenceSchema } from "./geofence";
 
 export const coordinateSchema = pgTable("coordinates", {
     id: uuid('id').primaryKey().defaultRandom(),
-    latitude: decimal('latitude', { precision: 9, scale: 6 }).notNull(), // Holds latitude  
-    longitude: decimal('longitude', { precision: 9, scale: 6 }).notNull(), // Holds longitude 
+    latitude: decimal('latitude', { precision: 9, scale: 6 }).$type<number>().notNull(), // Holds latitude  
+    longitude: decimal('longitude', { precision: 9, scale: 6 }).$type<number>().notNull(), // Holds longitude 
     ...timestamps
 });
 

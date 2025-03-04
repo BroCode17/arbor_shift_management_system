@@ -50,7 +50,15 @@ class ShiftService {
     }
 
     async getAllShifts(): Promise<any> {
-        const result = await db.select().from(shiftSchema).innerJoin(locationSchema, eq(shiftSchema.locationId, locationSchema.id)).innerJoin(coordinateSchema, eq(locationSchema.coordinatesId, coordinateSchema.id));
+        const result = await db.query.shiftSchema.findMany({
+            with: {
+                location: {
+                    with: {
+                        coordinates: true
+                    }
+                }
+            }
+        });
         return result;
     }
 

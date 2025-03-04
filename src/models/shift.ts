@@ -42,9 +42,13 @@ export const shiftAssignmentsSchema = pgTable('shift_assignments', {
 });
 
 // relationships
-export const shiftRelations = relations(shiftSchema, ({ many }) => ({
+export const shiftRelations = relations(shiftSchema, ({ many, one }) => ({
     availableShifts: many(availableShiftsSchema),
     assingedShifts: many(shiftAssignmentsSchema),
+    location: one(locationSchema, {
+        fields: [shiftSchema.locationId],
+        references: [locationSchema.id]
+    })
 }));
 
 export const shiftAssignmentRelations = relations(shiftAssignmentsSchema, ({ one, many }) => ({
